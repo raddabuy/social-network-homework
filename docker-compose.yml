@@ -1,0 +1,29 @@
+version: '3.4'
+
+services:
+  php:
+    build: 
+      context: ./docker/php
+    volumes:
+      - ./app:/var/www/html
+
+  nginx:
+    image: nginx:latest  
+    ports:
+      - 80:80
+    volumes:
+      - ./app:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: admin
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - 5432:5432
+    volumes:
+      - my-vol:/var/lib/postgresql/data
+volumes:
+  my-vol:
