@@ -10,7 +10,7 @@ services:
   nginx:
     image: nginx:latest  
     ports:
-      - 80:80
+      - 8081:80
     volumes:
       - ./app:/var/www/html
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
@@ -22,7 +22,7 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: 123456
     ports:
-      - 5432:5432
+      - 5435:5432
     volumes:
       - my-vol:/var/lib/postgresql/data
 volumes:

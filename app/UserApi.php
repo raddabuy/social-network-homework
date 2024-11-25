@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require 'vendor/autoload.php';
-// namespace Api;
 
 include 'Api.php';
 include 'Database.php';
@@ -15,6 +14,7 @@ use Api\User;
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\JWK;
 use Dotenv\Dotenv;
+use Firebase\JWT\Key;
  
 class UserApi extends Api
 {
@@ -37,7 +37,7 @@ class UserApi extends Api
             if ($stmt->execute([$name, $lastName, $birthdate, $biorgaphy, $city, $hashedPassword])) {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                return $this->response(['message' => 'User registered successfully with userId = ' . $user['id']], 200);
+                return $this->response(['userId' => $user['id']], 200);
             } else {
                 return $this->response(['message' => 'Registration failed.'], 500);
             }
@@ -78,13 +78,30 @@ class UserApi extends Api
     
             $jwt = JWT::encode($payload, $secretKey, 'HS256');
 
-            return $this->response(['message' => 'Login successful', 'Bearer token' => $jwt], 200);
+            return $this->response(['token' => $jwt], 200);
         } else {
             return $this->response(['message' => 'Invalid userId or password'], 422);
         }
     }
 
     public function getUser($request) {
+        //todo перенести в класс Api
+        $dotenv = Dotenv::createImmutable(__DIR__);
+        $dotenv->load();
+
+        $secretKey = $_ENV['JWT_SECRET'];
+
+        $jwt = $this->getBearerToken();
+
+        if ($jwt) {
+            try {
+                $decoded = JWT::decode($this->getBearerToken(), new Key($secretKey, 'HS256'));
+            } catch (\Exception $e) {
+                return $this->response(['message' => 'Invalid token'], 403);
+            }
+        } else {
+            return $this->response(['message' => 'Token is missing'], 422);
+        }
 
         $userId = $request['id'] ?? '';
 
@@ -92,20 +109,70 @@ class UserApi extends Api
 
         $stmt = $pdo->prepare("SELECT id, first_name, last_name, birthdate, biography, city FROM users WHERE id = ?");
         $stmt->execute([$userId]);
-        $rawUser = $stmt->fetch(PDO::FETCH_ASSOC);
+        $rowUser = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if(empty($rawUser)) {
+        if(empty($rowUser)) {
             return $this->response('User not found', 404);
         }
 
         $user = new User;
 	
-	    $user->setFirstName($rawUser['first_name']);
-        $user->setLastName($rawUser['last_name']);
-        $user->setBirthdate($rawUser['birthdate']);
-        $user->setBiography($rawUser['biography']);
-        $user->setCity($rawUser['city']);
+	    $user->setFirstName($rowUser['first_name']);
+        $user->setLastName($rowUser['last_name']);
+        $user->setBirthdate($rowUser['birthdate']);
+        $user->setBiography($rowUser['biography']);
+        $user->setCity($rowUser['city']);
 	
         return $this->response($user, 200);
     }
+
+    public function searchUser($request)
+    {
+        $firstName = $_GET['first_name'];
+        $lastName = $_GET['last_name'];
+
+        if (!isset($firstName) || !isset($lastName)) {
+            return $this->response(['message' => 'first_name and last_name are required'], 422);
+        }
+
+        $dotenv = Dotenv::createImmutable(__DIR__);
+        $dotenv->load();
+
+        $secretKey = $_ENV['JWT_SECRET'];
+
+        $jwt = $this->getBearerToken();
+
+        if ($jwt) {
+            try {
+                $decoded = JWT::decode($this->getBearerToken(), new Key($secretKey, 'HS256'));
+            } catch (\Exception $e) {
+                return $this->response(['message' => 'Invalid token'], 403);
+            }
+        } else {
+            return $this->response(['message' => 'Token is missing'], 422);
+        }
+
+        $pdo = (new Database())->getConnection();
+
+        $stmt = $pdo->prepare("SELECT id, first_name, last_name, birthdate, biography, city FROM users WHERE first_name LIKE ? AND last_name LIKE ?");
+        $stmt->execute(["$firstName%", "$lastName%"]);
+
+        $userRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $users = [];
+
+        foreach ($userRows as $row) {
+            $user = new User;
+	
+            $user->setFirstName($row['first_name']);
+            $user->setLastName($row['last_name']);
+            $user->setBirthdate($row['birthdate']);
+            $user->setBiography($row['biography']);
+            $user->setCity($row['city']);
+        
+            $users[] = $user;
+        }
+
+        return $this->response($users, 200);
+    } 
 }
