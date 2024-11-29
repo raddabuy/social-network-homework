@@ -6,7 +6,7 @@
 2. Запустить контейнеры docker compose up -d
 3. Выполнить sql файл. Для этого нужно:
      3.1. docker compose cp ./sql/create_users_table.sql postgres:/docker-entrypoint-initdb.d/create_users_table.sql (копируем файл в контейнер)
-     3.2. docker compose exec -u root postgres psql admin root -f docker-entrypoint-initdb.d/create_test.sql (выполняем sql команду)
+     3.2. docker compose exec -u root postgres psql admin root -f docker-entrypoint-initdb.d/create_users_table.sql (выполняем sql команду)
    В итоге создается таблица users
 5. Установить необходимые пакеты. Для этого нужно:
     4.1. Зайти в php контейнер командой docker compose exec php bash
@@ -17,3 +17,11 @@
 /login
 /user/register
 /user/get/{id}
+
+UPDATE 29.11.2024
+Добавлен запрос для поиска из спецификации /user/search. К домашнему заданию будет приложена обновленная коллекция из Postman
+Добавлен файл для импорта пользователей и отредактирован файл create_users_table.sql. Чтобы импортировать данные, требуется выполнить следующие действия:
+1. docker compose cp ./sql/create_users_table.sql postgres:/docker-entrypoint-initdb.d/create_users_table.sql (копируем измененный файл в контейнер)
+2. docker compose cp ./sql/people.v2.csv postgres:/docker-entrypoint-initdb.d/people.v2.csv (копируем файл с данными)
+3. docker compose exec -u root postgres psql admin root -f docker-entrypoint-initdb.d/create_users_table.sql (выполняем sql команду)
+
