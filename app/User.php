@@ -6,11 +6,16 @@ namespace Api;
 
 class User {
 
+    public $id;
     public $firstName;
     public $lastName;
     public $birthdate;
     public $biography;
     public $city;
+
+    public function setId($id) {
+        $this->id = $id;
+    }
 
     public function setFirstName($firstName) {
         $this->firstName = $firstName;

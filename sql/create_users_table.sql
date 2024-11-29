@@ -5,5 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
     birthdate DATE,
     biography TEXT,
     city VARCHAR(100),
-    password VARCHAR(100) NOT NULL
+    password VARCHAR(100)
 );
+
+COPY users(first_name, last_name,birthdate,city) FROM '/docker-entrypoint-initdb.d/people.v2.csv' DELIMITER ',' CSV HEADER;
+

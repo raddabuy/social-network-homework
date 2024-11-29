@@ -20,12 +20,12 @@ class UserApi extends Api
 {
     public function register()
     {
-        $name = $this->requestParams['name'] ?? '';
-        $lastName = $this->requestParams['last_name'] ?? '';
-        $birthdate = $this->requestParams['birthdate'] ?? null;
-        $biorgaphy = $this->requestParams['biography'] ?? '';
-        $city = $this->requestParams['city'] ?? '';
-        $password = $this->requestParams['password'] ?? '';
+        $name = $this->postRequest['name'] ?? '';
+        $lastName = $this->postRequest['last_name'] ?? '';
+        $birthdate = $this->postRequest['birthdate'] ?? null;
+        $biorgaphy = $this->postRequest['biography'] ?? '';
+        $city = $this->postRequest['city'] ?? '';
+        $password = $this->postRequest['password'] ?? '';
 
         if($name && $password){
             $pdo = (new Database())->getConnection();
@@ -52,8 +52,8 @@ class UserApi extends Api
     }
  
     public function login(){
-        $userId = $this->requestParams['user_id'] ?? '';
-        $password = $this->requestParams['password'] ?? '';
+        $userId = $this->postRequest['user_id'] ?? '';
+        $password = $this->postRequest['password'] ?? '';
 
         if (empty($userId) || empty($password)) {
             return $this->response(['message' => 'UserId and password are required.'], 422);
@@ -117,6 +117,7 @@ class UserApi extends Api
 
         $user = new User;
 	
+	    $user->setId($userId);
 	    $user->setFirstName($rowUser['first_name']);
         $user->setLastName($rowUser['last_name']);
         $user->setBirthdate($rowUser['birthdate']);
@@ -163,7 +164,8 @@ class UserApi extends Api
 
         foreach ($userRows as $row) {
             $user = new User;
-	
+
+            $user->setId($row['id']);
             $user->setFirstName($row['first_name']);
             $user->setLastName($row['last_name']);
             $user->setBirthdate($row['birthdate']);
