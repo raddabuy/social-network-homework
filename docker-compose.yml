@@ -2,13 +2,17 @@ version: '3.4'
 
 services:
   php:
-    build: 
+    build:
       context: ./docker/php
+    networks:
+      - pgnet
     volumes:
       - ./app:/var/www/html
 
   nginx:
-    image: nginx:latest  
+    image: nginx:latest
+    networks:
+      - pgnet
     ports:
       - 8081:80
     volumes:
@@ -16,7 +20,10 @@ services:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
 
   postgres:
+    container_name: "pgmaster"
     image: postgres:13.3
+    networks:
+      - pgnet
     environment:
       POSTGRES_DB: admin
       POSTGRES_USER: root
@@ -24,6 +31,34 @@ services:
     ports:
       - 5435:5432
     volumes:
+      - ./volumes/pgmaster/:/var/lib/postgresql/data
       - my-vol:/var/lib/postgresql/data
+
+  pgslave:
+    container_name: "pgslave"
+    image: postgres:13.3
+    networks:
+      - pgnet
+    ports:
+      - 15432:5432
+    volumes:
+      - ./volumes/pgslave/:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 123456
+
+  pgslave2:
+    container_name: "pgslave2"
+    image: postgres:13.3
+    networks:
+      - pgnet
+    ports:
+      - 15433:5432
+    volumes:
+      - ./volumes/pgslave2/:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 123456
+
 volumes:
   my-vol:
+networks:
+  pgnet:
