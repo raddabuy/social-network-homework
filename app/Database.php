@@ -9,8 +9,12 @@ require 'vendor/autoload.php';
 use Dotenv\Dotenv;
 
 class Database {
-    
-    public $host;
+
+    const WRITE = 'write';
+    const READ = 'read';
+    public $hostMaster;
+    public $hostSlave1;
+    public $hostSlave2;
     public $port;
     public $db;
     public $user;
@@ -20,16 +24,25 @@ class Database {
         $dotenv = Dotenv::createImmutable(__DIR__);
         $dotenv->load();
 
-        $this->host = $_ENV['POSTGRES_HOST'];
+        $this->hostMaster = $_ENV['POSTGRES_HOST'];
+        $this->hostSlave1 = $_ENV['POSTGRES_HOST_SLAVE1'];
+        $this->hostSlave2 = $_ENV['POSTGRES_HOST_SLAVE2'];
+
         $this->port = $_ENV['POSTGRES_PORT'];
         $this->db = $_ENV['POSTGRES_DB'];
         $this->user = $_ENV['POSTGRES_USER'];
         $this->pass = $_ENV['POSTGRES_PASSWORD'];
     }
 
-    public function getConnection() {
+    public function getConnection(string $type) {
         try {
-            $pdo = new \PDO("pgsql:host=$this->host;port=$this->port;dbname=$this->db", $this->user, $this->pass);
+            if ($type === self::WRITE){
+                $pdo = new \PDO("pgsql:host=$this->hostMaster;port=$this->port;dbname=$this->db", $this->user, $this->pass);
+            } elseif ($type === self::READ){
+                $hosts = [$this->hostSlave1, $this->hostSlave2];
+                $hostIndex = array_rand([$this->hostSlave1, $this->hostSlave2]);
+                $pdo = new \PDO("pgsql:host=$hosts[$hostIndex];port=$this->port;dbname=$this->db", $this->user, $this->pass);
+            }
             $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
             return $pdo;

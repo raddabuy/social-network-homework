@@ -15,7 +15,7 @@ use \Firebase\JWT\JWT;
 use \Firebase\JWT\JWK;
 use Dotenv\Dotenv;
 use Firebase\JWT\Key;
- 
+
 class UserApi extends Api
 {
     public function register()
@@ -28,12 +28,12 @@ class UserApi extends Api
         $password = $this->postRequest['password'] ?? '';
 
         if($name && $password){
-            $pdo = (new Database())->getConnection();
+            $pdo = (new Database())->getConnection(Database::WRITE);
 
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
- 
+
             $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, birthdate, biography, city, password) VALUES (?, ?, ?, ?, ?, ?) RETURNING id");
-            
+
             if ($stmt->execute([$name, $lastName, $birthdate, $biorgaphy, $city, $hashedPassword])) {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,10 +47,10 @@ class UserApi extends Api
             return $this->response(['message' => 'Username and password are required.'], 422);
             return;
         }
-    
+
         return $this->response("Saving error", 500);
     }
- 
+
     public function login(){
         $userId = $this->postRequest['user_id'] ?? '';
         $password = $this->postRequest['password'] ?? '';
@@ -59,7 +59,7 @@ class UserApi extends Api
             return $this->response(['message' => 'UserId and password are required.'], 422);
         }
 
-        $pdo = (new Database())->getConnection();
+        $pdo = (new Database())->getConnection(Database::READ);
         $stmt = $pdo->prepare("SELECT id, password FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -67,15 +67,15 @@ class UserApi extends Api
         if ($user && password_verify($password, $user['password'])) {
             $payload = [
                 'iat' => time(),
-                'exp' => time() + (60 * 60), 
-                'id' => $user['id'] 
+                'exp' => time() + (60 * 60),
+                'id' => $user['id']
             ];
 
             $dotenv = Dotenv::createImmutable(__DIR__);
             $dotenv->load();
-    
+
             $secretKey = $_ENV['JWT_SECRET'];
-    
+
             $jwt = JWT::encode($payload, $secretKey, 'HS256');
 
             return $this->response(['token' => $jwt], 200);
@@ -105,25 +105,25 @@ class UserApi extends Api
 
         $userId = $request['id'] ?? '';
 
-        $pdo = (new Database())->getConnection();
+        $pdo = (new Database())->getConnection(Database::READ);
 
         $stmt = $pdo->prepare("SELECT id, first_name, last_name, birthdate, biography, city FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $rowUser = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if(empty($rowUser)) {
             return $this->response('User not found', 404);
         }
 
         $user = new User;
-	
-	    $user->setId($userId);
-	    $user->setFirstName($rowUser['first_name']);
+
+        $user->setId($userId);
+        $user->setFirstName($rowUser['first_name']);
         $user->setLastName($rowUser['last_name']);
         $user->setBirthdate($rowUser['birthdate']);
         $user->setBiography($rowUser['biography']);
         $user->setCity($rowUser['city']);
-	
+
         return $this->response($user, 200);
     }
 
@@ -153,7 +153,7 @@ class UserApi extends Api
             return $this->response(['message' => 'Token is missing'], 422);
         }
 
-        $pdo = (new Database())->getConnection();
+        $pdo = (new Database())->getConnection(Database::READ);
 
         $stmt = $pdo->prepare("SELECT id, first_name, last_name, birthdate, biography, city FROM users WHERE first_name LIKE ? AND last_name LIKE ?");
         $stmt->execute(["$firstName%", "$lastName%"]);
@@ -171,10 +171,10 @@ class UserApi extends Api
             $user->setBirthdate($row['birthdate']);
             $user->setBiography($row['biography']);
             $user->setCity($row['city']);
-        
+
             $users[] = $user;
         }
 
         return $this->response($users, 200);
-    } 
+    }
 }
